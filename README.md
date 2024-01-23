@@ -41,9 +41,9 @@ Install all the necessary packages using the requirements.txt file:
 
 Create a .env file in the root directory of your project and add your environment variables to it:
 ```
-   OPENAI_KEY=your_openai_key
-   GOOGLE_API_KEY=your_google_api_key
-   GOOGLE_CX=your_google_cx
+   OPENAI_API_KEY=your_openai_key
+   SEARCH_ENGINE_API_KEY=your_google_api_key
+   SEARCH_ENGINE_ID=your_google_cx
 ```
 
 
