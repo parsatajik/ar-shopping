@@ -1,3 +1,4 @@
+import os
 import json
 import requests
 from dotenv import load_dotenv
@@ -5,8 +6,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def search(query):
-    api_key = "AIzaSyAlnHpQbt9AFsKT3jlUP5wLUE_oBgnAic0"
-    cx = "867690ce5a8ad442b"
+    api_key = os.environ.get("SEARCH_ENGINE_API_KEY")
+    cx = os.environ.get("SEARCH_ENGINE_ID")
     url = f"https://www.googleapis.com/customsearch/v1?cx={cx}&q={query}&key={api_key}"
 
     print(f"Query: {query}")  
