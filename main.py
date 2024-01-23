@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 from openai_vision import detect_objects
 from search import search
 from camera import start_camera
@@ -17,19 +18,21 @@ if option == "Upload an image":
     if image_file is not None:
         st.image(image_file, caption="Uploaded Image", use_column_width=True)
 
-        with st.spinner('Processing...'):
+        with st.spinner("Processing..."):
             detected_objects = detect_objects(image_file)
 
         st.write(detected_objects)
 
         if detected_objects:
             search_results = search(detected_objects)
-            st.table(search_results)
+            for link, title in search_results.items():
+                st.markdown(f"[{title}]({link})")
+                # components.iframe(link)
 
 elif option == "Capture from webcam":
     webrtc_ctx = start_camera()
 
-    if st.button('Capture'):
+    if st.button("Capture"):
         if webrtc_ctx.video_processor:
             webrtc_ctx.video_processor.frame_lock = True
             img = webrtc_ctx.video_processor.latest_frame
@@ -41,14 +44,16 @@ elif option == "Capture from webcam":
 
             # Convert the PIL image to a file-like object
             img_byte_arr = io.BytesIO()
-            pil_img.save(img_byte_arr, format='PNG')
+            pil_img.save(img_byte_arr, format="PNG")
             img_byte_arr = img_byte_arr.getvalue()
 
-            with st.spinner('Processing...'):
+            with st.spinner("Processing..."):
                 detected_objects = detect_objects(img_byte_arr)
 
             st.write(detected_objects)
 
             if detected_objects:
                 search_results = search(detected_objects)
-                st.table(search_results)
+                for link, title in search_results.items():
+                    st.markdown(f"[{title}]({link})")
+                    # components.iframe(link)
