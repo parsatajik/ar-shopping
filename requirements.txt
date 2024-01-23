@@ -2,3 +2,5 @@ streamlit
 requests
 OpenAI
 python-dotenv
+opencv-python
+streamlit_webrtc
