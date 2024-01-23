@@ -1,12 +1,14 @@
 import os
 import base64
-
+from dotenv import load_dotenv
 from openai import OpenAI
 
-API_KEY = os.environ.get("OPENAI_KEY")
+load_dotenv()
+
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 client = OpenAI(
-    api_key=API_KEY,
+    api_key=OPENAI_API_KEY,
 )
 
 PROMPT = """

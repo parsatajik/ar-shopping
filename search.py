@@ -1,19 +1,21 @@
-import requests
 import json
+import requests
+from dotenv import load_dotenv
 
+load_dotenv()
 
 def search(query):
     api_key = "AIzaSyAlnHpQbt9AFsKT3jlUP5wLUE_oBgnAic0"
     cx = "867690ce5a8ad442b"
     url = f"https://www.googleapis.com/customsearch/v1?cx={cx}&q={query}&key={api_key}"
 
-    print(f"Query: {query}")  # print the query
+    print(f"Query: {query}")  
 
     data = requests.get(url).json()
-    print(f"API Response: {data}")  # print the entire API response
+    print(f"API Response: {data}")  
 
     search_items = data.get("items")
-    if search_items is None:  # check if items is None
+    if search_items is None:  
         print("No items in API response")
         return {}
 
