@@ -61,7 +61,7 @@ Replace your_openai_key, your_google_api_key, and your_google_cx with your actua
     uvicorn main:app --reload
 ```
 
-6. (Optionally) Run the streamlit version
+6. (Optionally) Run the streamlit version from the root directory
 
 You can run the application using Streamlit:
 ```bash
