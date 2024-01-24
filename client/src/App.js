@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 function App() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [results, setResults] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
@@ -10,6 +11,8 @@ function App() {
 
   const handleUpload = async () => {
     if (selectedFile) {
+      setLoading(true);
+
       const formData = new FormData();
       formData.append('image_file', selectedFile);
 
@@ -21,12 +24,20 @@ function App() {
 
         if (response.ok) {
           const data = await response.json();
-          setResults(data.results);
+          const resultsArray = Object.entries(data.results).map(([link, result]) => ({
+            title: result.title,
+            price: result.price,
+            supports_bnpl: result.supports_bnpl,
+            link: link,
+          }));
+          setResults(resultsArray);
         } else {
           console.error('Error:', response.statusText);
         }
       } catch (error) {
         console.error('Error:', error.message);
+      } finally {
+        setLoading(false);
       }
     } else {
       console.error('No file selected');
@@ -45,14 +56,19 @@ function App() {
                 Upload
               </button>
 
+              {loading && <p>Loading...</p>}
+
               {results && (
                 <div className="mt-4">
                   <h3>Results:</h3>
                   <ul className="list-group">
-                    {Object.entries(results).map(([link, title]) => (
-                      <li key={link} className="list-group-item">
-                        <a href={link} target="_blank" rel="noopener noreferrer">
-                          {title}
+                    {results.map((result, index) => (
+                      <li key={index} className="list-group-item">
+                        <strong>Title:</strong> {result.title}<br />
+                        <strong>Price:</strong> {result.price}<br />
+                        <strong>Supports Affirm:</strong> {result.supports_bnpl ? 'Yes' : 'No'}<br />
+                        <a href={result.link} target="_blank" rel="noopener noreferrer">
+                          View Details
                         </a>
                       </li>
                     ))}

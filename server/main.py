@@ -2,7 +2,9 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from utils.openai_vision import detect_objects
 from utils.search import search
-
+from utils.price_and_bnpl_support import get_price_and_bnpl
+from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures
 
 app = FastAPI()
 
@@ -21,6 +23,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# async def process_link(link, title):
+#     price_and_bnpl_support = await get_price_and_bnpl(link)
+#     return link, {"title": title, "price": price_and_bnpl_support["price"], "supports_bnpl": price_and_bnpl_support["supports_bnpl"]}
 
 #
 # Validate file.
@@ -29,6 +34,10 @@ def validate_image(file: UploadFile):
 
     if file.content_type not in allowed_image_types:
         raise HTTPException(status_code=400, detail="Invalid image type. Supported types: JPEG, PNG, GIF")
+
+def process_link(link, title):
+    price_and_bnpl_support = get_price_and_bnpl(link)
+    return {"title": title, "price": price_and_bnpl_support["price"], "supports_bnpl": price_and_bnpl_support["supports_bnpl"]}
 
 #
 # Main route.
@@ -41,8 +50,25 @@ def create_upload_file(image_file: UploadFile = File(...)):
     detected_objects = detect_objects(image_content)
 
     if detected_objects:
-        search_results = search(detected_objects)
-        
+        search_results = search(detected_objects, 5)  # Limit to 3 results
+
+        # Use ThreadPoolExecutor to run the processing in parallel
+        with ThreadPoolExecutor() as executor:
+            futures = []
+            for link, title in search_results.items():
+                future = executor.submit(process_link, link, title)
+                futures.append(future)
+
+            # Wait for all futures to complete
+            concurrent.futures.wait(futures)
+
+            # Get the results from the completed futures
+            processed_results = [future.result() for future in futures]
+
+            # Update the search_results with the processed results
+            for i, (link, _) in enumerate(search_results.items()):
+                search_results[link] = processed_results[i]
+
         return {"results": search_results}
     else:
         return {"error": "No objects detected in the image."}
