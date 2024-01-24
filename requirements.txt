@@ -5,5 +5,5 @@ python-dotenv
 opencv-python
 streamlit_webrtc
 fastapi
-'uvicorn[standard]'
+uvicorn[standard]
 python-multipart
