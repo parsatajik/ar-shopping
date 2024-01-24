@@ -4,7 +4,13 @@ AR Shopping App
 This application uses OpenAI's GPT-4 Vision model to identify products in an image and then searches for these products on the internet.
 Setup
 
-Follow these steps to set up and run the application:
+To run the UI:
+1. cd into the client directory
+2. run npm install
+3. run npm start
+4. open localhost:3000 in your browser
+
+To run the server:
 
 1. Create a Python virtual environment
 
@@ -22,12 +28,12 @@ Before you can start installing or using packages in your virtual environment yo
 
 - On macOS and Linux:
 ```bash
-    source env/bin/activate
+    source vision/bin/activate
 ```
 
 - On Windows:
 ```bash
-    .\env\Scripts\activate
+    .\vision\Scripts\activate
 ```
 
 3. Install the required packages
@@ -49,13 +55,18 @@ Create a .env file in the root directory of your project and add your environmen
 
 Replace your_openai_key, your_google_api_key, and your_google_cx with your actual keys.
 
-5. Run the application
+5. cd into the server directory, and run the server using uvicorn
+
+```bash
+    uvicorn main:app --reload
+```
+
+6. (Optionally) Run the streamlit version
 
 You can run the application using Streamlit:
 ```bash
     python -m streamlit run main.py
 ```
-
 
 This will start the Streamlit server and open the application in your web browser.
 

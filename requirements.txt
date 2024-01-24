@@ -4,3 +4,6 @@ OpenAI
 python-dotenv
 opencv-python
 streamlit_webrtc
+fastapi
+'uvicorn[standard]'
+python-multipart
