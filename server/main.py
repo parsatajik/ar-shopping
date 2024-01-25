@@ -3,8 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from utils.openai_vision import detect_objects
 from utils.search import search
 from utils.price_and_bnpl_support import get_price_and_bnpl
+from utils.product_picture import searchPicture
 from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
+
 
 app = FastAPI()
 
@@ -36,8 +38,10 @@ def validate_image(file: UploadFile):
         raise HTTPException(status_code=400, detail="Invalid image type. Supported types: JPEG, PNG, GIF")
 
 def process_link(link, title):
+    image = searchPicture(title)
+    print("image: ", image)
     price_and_bnpl_support = get_price_and_bnpl(link)
-    return {"title": title, "price": price_and_bnpl_support["price"], "supports_bnpl": price_and_bnpl_support["supports_bnpl"]}
+    return {"title": title, "price": price_and_bnpl_support["price"], "supports_bnpl": price_and_bnpl_support["supports_bnpl"], "image_url": image}
 
 #
 # Main route.
