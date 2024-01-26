@@ -1,27 +1,48 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { io } from 'socket.io-client';
 
 import ImageUploader from "../components/ImageUploader";
 import Camera from "../components/Camera";
 import SearchResults from "../components/SearchResults";
+const WEBSOCKET_URL = 'ws://localhost:8000/ws'
+
+const socket = io("ws://localhost:3000/ws", { path: "/ws/socket.io/", transports: ['websocket', 'polling'] });
+  
+socket.on("connect", () => { console.log("Connected", socket.id) });
+socket.on("response", () => { console.log("Response", socket.id) });
+socket.on("message", data => { console.log(data) });
 
 const Home = () => {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFileb64, setSelectedFileb64] = useState(null);
   const [results, setResults] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [socket, setSocket] = useState(null);
 
   const handleFileChange = (event) => {
+    const data = new FileReader()
+    data.addEventListener('load', ()=> {
+        setSelectedFileb64(data.result)
+    })
+    data.readAsDataURL(event.target.files[0])
     setSelectedFile(event.target.files[0]);
   };
 
   const handleUpload = async () => {
-    const formData = new FormData();
-    formData.append("image_file", selectedFile);
+    //const formData = new FormData();
+    //formData.append("image_file", selectedFile);
 
     try {
       setIsLoading(true);
+      console.log(selectedFileb64)
+      // TODO: add error in case file is not set or socket is closed
+      if (selectedFileb64) {
+        socket.send(selectedFileb64)
+        console.log("sent b64 image to server");
+      }
 
-      const response = await axios.post(
+      /*const response = await axios.post(
         "http://localhost:8000/uploadfile/",
         formData
       );
@@ -31,7 +52,7 @@ const Home = () => {
         console.log(response.data.results);
       } else {
         console.error("Error:", response.statusText);
-      }
+      }*/
     } catch (error) {
       console.error("Error:", error.message);
     } finally {
@@ -39,6 +60,43 @@ const Home = () => {
     }
   };
 
+  useEffect(() => {
+    const newSocket = new WebSocket(WEBSOCKET_URL);
+    setSocket(newSocket);
+    return;// (); //=> newSocket.close();
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.onopen = function (event) {
+      console.log("WebSocket connected");
+    };
+
+    socket.onmessage = function (event) {
+      // TODO: setResults here
+      console.log("Received message:", event.data);
+    };
+
+    socket.onclose = function (event) {
+      console.log("WebSocket closed");
+      setIsLoading(false);
+      socket.close();
+      //const newSocket = new WebSocket(WEBSOCKET_URL);
+      //setSocket(newSocket);
+    };
+  
+    socket.onerror = function (error) {
+        console.error("Error:", error)
+        setIsLoading(false);
+        socket.close();
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, [socket]);
+  
   useEffect(() => {
     if (selectedFile) {
       handleUpload();
