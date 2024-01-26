@@ -4,13 +4,13 @@ const ImageUploader = ({ handleFileChange }) => {
   return (
     <div className="w-full">
       <div className="bg-white shadow-md rounded px-6 pt-4 pb-6 mb-4">
-        <label class="block">
-          <span class="sr-only">Upload your photo</span>
+        <label className="block">
+          <span className="sr-only">Upload your photo</span>
           <input
             type="file"
             onChange={handleFileChange}
             accept="image/*"
-            class="block w-full text-sm text-gray-500
+            className="block w-full text-sm text-gray-500
                     file:me-4 file:py-2 file:px-4
                     file:rounded file:border-0
                     file:text-sm file:font-semibold

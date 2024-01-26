@@ -8,6 +8,7 @@ import SearchResults from "../components/SearchResults";
 const Home = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [results, setResults] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
@@ -18,6 +19,8 @@ const Home = () => {
     formData.append("image_file", selectedFile);
 
     try {
+      setIsLoading(true);
+
       const response = await axios.post(
         "http://localhost:8000/uploadfile/",
         formData
@@ -25,11 +28,14 @@ const Home = () => {
 
       if (response.status === 200) {
         setResults(response.data.results);
+        console.log(response.data.results);
       } else {
         console.error("Error:", response.statusText);
       }
     } catch (error) {
       console.error("Error:", error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -45,7 +51,7 @@ const Home = () => {
       title: "Product 1",
       price: 1000,
       link: "https://via.placeholder.com/150",
-      img: "https://via.placeholder.com/150",
+      image_url: "https://via.placeholder.com/150",
       supports_bnpl: true,
     },
     {
@@ -53,7 +59,7 @@ const Home = () => {
       title: "Product 2",
       price: 2000,
       link: "https://via.placeholder.com/150",
-      img: "https://via.placeholder.com/150",
+      image_url: "https://via.placeholder.com/150",
       supports_bnpl: true,
     },
     {
@@ -61,7 +67,7 @@ const Home = () => {
       title: "Product 3",
       price: 3000,
       link: "https://via.placeholder.com/150",
-      img: "https://via.placeholder.com/150",
+      image_url: "https://via.placeholder.com/150",
       supports_bnpl: true,
     },
     {
@@ -69,7 +75,7 @@ const Home = () => {
       title: "Product 4",
       price: 4000,
       link: "https://via.placeholder.com/150",
-      img: "https://via.placeholder.com/150",
+      image_url: "https://via.placeholder.com/150",
       supports_bnpl: false,
     },
     {
@@ -77,7 +83,7 @@ const Home = () => {
       title: "Product 5",
       price: 5000,
       link: "https://via.placeholder.com/150",
-      img: "https://via.placeholder.com/150",
+      image_url: "https://via.placeholder.com/150",
       supports_bnpl: false,
     },
   ];
@@ -92,7 +98,11 @@ const Home = () => {
         <Camera />
       </div>
       <div className="w-full">
-        <SearchResults results={MOCKED_RESULTS} />
+        <SearchResults
+          results={results}
+          selectedFile={selectedFile}
+          isLoading={isLoading}
+        />
       </div>
     </div>
   );
