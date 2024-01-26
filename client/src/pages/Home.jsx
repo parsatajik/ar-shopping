@@ -1,14 +1,21 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import * as LottiePlayer from "@lottiefiles/lottie-player";
 
 import ImageUploader from "../components/ImageUploader";
 import Camera from "../components/Camera";
 import SearchResults from "../components/SearchResults";
+import Modal from "../components/Modal";
+
+import LOGO_LARGE from "../logo-large.svg";
+import SHOPPING_ANIMATION from "../shopping-animation.json";
 
 const Home = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [results, setResults] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProductLink, setSelectedProductLink] = useState(null);
 
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
@@ -44,6 +51,17 @@ const Home = () => {
       handleUpload();
     }
   }, [selectedFile]);
+
+  useEffect(() => {
+    if (isModalOpen) {
+      setTimeout(() => {
+        setIsModalOpen(false);
+        if (selectedProductLink) {
+          window.open(selectedProductLink, "_blank");
+        }
+      }, 3000);
+    }
+  }, [isModalOpen]);
 
   const MOCKED_RESULTS = [
     {
@@ -96,12 +114,27 @@ const Home = () => {
         </h2>
         <ImageUploader handleFileChange={handleFileChange} />
         <Camera />
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+          <div className="flex flex-col items-center justify-center p-10">
+            <img src={LOGO_LARGE} alt="Affirm Logo" className="mb-4" />
+            <h3 className="text-xl font-bold mb-4">Buy Now, Pay Over Time</h3>
+            <lottie-player
+              autoplay
+              loop
+              mode="normal"
+              src="https://lottie.host/2259fab8-4b05-4734-98a5-30d0155afdf1/hLtopSNTBI.json"
+            ></lottie-player>
+            <p className="mt-4">We're taking you to your product...</p>
+          </div>
+        </Modal>
       </div>
       <div className="w-full">
         <SearchResults
           results={results}
           selectedFile={selectedFile}
           isLoading={isLoading}
+          setSelectedProductLink={setSelectedProductLink}
+          setIsModalOpen={setIsModalOpen}
         />
       </div>
     </div>

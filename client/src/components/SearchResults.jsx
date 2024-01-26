@@ -14,8 +14,18 @@ const Loading = () => (
   </div>
 );
 
-const Result = ({ title, price, link, image_url, supports_bnpl }) => (
-  <div className="flex flex-row gap-4 bg-white shadow-md rounded px-6 pt-4 pb-6 mb-4 relative transform transition duration-500 hover:scale-105">
+const Result = ({
+  title,
+  price,
+  link,
+  image_url,
+  supports_bnpl,
+  handleResultClick,
+}) => (
+  <div
+    className="flex flex-row gap-4 bg-white shadow-md rounded px-6 pt-4 pb-6 mb-4 relative transform transition duration-500 hover:scale-105"
+    onClick={() => handleResultClick(link)}
+  >
     {supports_bnpl && (
       <img
         src={LOGO}
@@ -41,13 +51,24 @@ const Result = ({ title, price, link, image_url, supports_bnpl }) => (
   </div>
 );
 
-const SearchResults = ({ results, selectedFile, isLoading }) => {
+const SearchResults = ({
+  results,
+  selectedFile,
+  isLoading,
+  setSelectedProductLink,
+  setIsModalOpen,
+}) => {
+  const handleResultClick = (link) => {
+    setSelectedProductLink(link);
+    setIsModalOpen(true);
+  };
+
   if (results) {
     return (
       <>
         <h3 className="text-gray-700 text-lg font-semibold mb-4">Results</h3>
         {results.map((result, index) => (
-          <Result {...result} />
+          <Result {...result} handleResultClick={handleResultClick} />
         ))}
       </>
     );
