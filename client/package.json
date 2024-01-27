@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@formkit/auto-animate": "^0.8.1",
+    "@lottiefiles/lottie-player": "^2.0.3",
     "@preline/overlay": "^2.0.2",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",

@@ -18,7 +18,7 @@ app = FastAPI()
 origins = [
     "http://localhost",
     "http://localhost:3000",
-    "http://localhost:8000", 
+    "http://localhost:8000",
     "ws://localhost:3000",
 ]
 
@@ -32,11 +32,13 @@ app.add_middleware(
 
 aq = asyncio.Queue()
 
+
 class ConnectionManager:
     last_message = ""
+
     def __init__(self) -> None:
-        self.connections  = {}
- 
+        self.connections = {}
+
     async def connect(self, conn_id: str, websocket: WebSocket):
         await websocket.accept()
         self.connections[conn_id] = websocket
@@ -56,19 +58,28 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+
 #
 # Validate file.
 def validate_image(file: UploadFile):
     allowed_image_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/jpg"]
 
     if file.content_type not in allowed_image_types:
-        raise HTTPException(status_code=400, detail="Invalid image type. Supported types: JPEG, PNG, GIF")
+        raise HTTPException(
+            status_code=400, detail="Invalid image type. Supported types: JPEG, PNG, GIF"
+        )
+
 
 def process_link_using_selenium(link, title):
     image = searchPicture(title)
     print("image: ", image)
     price_and_bnpl_support = get_price_and_bnpl(link)
-    return {"title": title, "price": price_and_bnpl_support["price"], "supports_bnpl": price_and_bnpl_support["supports_bnpl"], "image_url": image}
+    return {
+        "title": title,
+        "price": price_and_bnpl_support["price"],
+        "supports_bnpl": price_and_bnpl_support["supports_bnpl"],
+        "image_url": image,
+    }
 
 
 def process_link(link, title):
@@ -83,11 +94,18 @@ def process_link(link, title):
         else:
             image_url = searchPicture(title)
             print("Falling back to searching image via Google API: ", image_url)
-        return {"link": link, "title": title, "price": price_and_bnpl_support["price"], "supports_bnpl": price_and_bnpl_support["supports_bnpl"], "images": image_url}
+        return {
+            "link": link,
+            "title": title,
+            "price": price_and_bnpl_support["price"],
+            "supports_bnpl": price_and_bnpl_support["supports_bnpl"],
+            "image_url": image_url,
+        }
     except Exception as e:
-        #print(e)
+        # print(e)
         print("Falling back to Selenium!")
         return process_link_using_selenium(link, title)
+
 
 # Validate file.
 def validate_image_type(image_type):
@@ -95,17 +113,17 @@ def validate_image_type(image_type):
     print("Valiating image type")
     if image_type not in allowed_image_types:
         print("Invalid Image name")
-        return False 
+        return False
     return True
 
 
 async def process_image(data):
-    print(re.split(';|:', data))
-    image_type = re.split(';|:', data)[1] 
-    result = validate_image_type(image_type) 
-    if not result: 
+    print(re.split(";|:", data))
+    image_type = re.split(";|:", data)[1]
+    result = validate_image_type(image_type)
+    if not result:
         await aq.put({"error": "Invalid image type. Supported types: JPEG, PNG, GIF"})
-        return {"results": 'Invalid Image!'}
+        return {"results": "Invalid Image!"}
 
     response = urllib.request.urlopen(data)
     image_data = response.file.read()
@@ -115,7 +133,7 @@ async def process_image(data):
         search_results = search(detected_objects, 5)
         processed_results = []
         # Use ThreadPoolExecutor to run the processing in parallel
-        with ThreadPoolExecutor() as executor: 
+        with ThreadPoolExecutor() as executor:
             futures = []
             for link, title in search_results.items():
                 future = executor.submit(process_link, link, title)
@@ -126,13 +144,10 @@ async def process_image(data):
                 print(result)
                 await aq.put({**result})
 
-            # Create a new list of results with link included in each object
-            #search_results = [{"link": link, **result} for link, result in zip(search_results.keys(), processed_results)]
-
-        return {"results": 'done'}
+        return {"results": "done"}
     else:
-        return {"error": "No objects detected in the image."} 
-    
+        return {"error": "No objects detected in the image."}
+
 
 # Consumer sending data to client
 async def process_data(q):
@@ -141,7 +156,8 @@ async def process_data(q):
         data = await q.get()
         print(f"processing: {data}")
         # TODO: Need to change the conn_id
-        await manager.send_messages('1', data)
+        await manager.send_messages("1", data)
+
 
 #
 # Main route
@@ -149,56 +165,20 @@ async def process_data(q):
 async def upload_file_ws(websocket: WebSocket):
     # TODO: change hardcoded connection id
     # Accept WebSocket connection
-    await manager.connect('1', websocket)
+    await manager.connect("1", websocket)
     try:
         while True:
-            print(manager.connections.get('1'))
+            print(manager.connections.get("1"))
             data = await websocket.receive_text()
             if data:
                 await process_image(data)
     except Exception as e:
         print(e)
-        await manager.disconnect('1')    
+        await manager.disconnect("1")
 
 
 @app.on_event("startup")
 async def start_up():
-  consumers = asyncio.create_task(process_data(aq))
-  #await asyncio.gather(consumers)
-  #await aq.join()
-
-#
-# Main route.
-'''
-@app.post("/uploadfile/")
-def create_upload_file(image_file: UploadFile = File(...)):
-    validate_image(image_file)
-
-    image_content = image_file.file.read()
-
-    detected_objects = detect_objects(image_content)
-
-    if detected_objects:
-        search_results = search(detected_objects, 5)  # Limit to 5 results
-
-        # Use ThreadPoolExecutor to run the processing in parallel
-        with ThreadPoolExecutor() as executor:
-            futures = []
-            for link, title in search_results.items():
-                future = executor.submit(process_link, link, title)
-                futures.append(future)
-
-            # Wait for all futures to complete
-            concurrent.futures.wait(futures)
-
-            # Get the results from the completed futures
-            processed_results = [future.result() for future in futures]
-
-            # Create a new list of results with link included in each object
-            search_results = [{"link": link, **result} for link, result in zip(search_results.keys(), processed_results)]
-
-        return {"results": search_results}
-    else:
-        return {"error": "No objects detected in the image."}
-'''
-
+    consumers = asyncio.create_task(process_data(aq))
+    # await asyncio.gather(consumers)
+    # await aq.join()

@@ -1,69 +1,46 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { io } from 'socket.io-client';
 
 import ImageUploader from "../components/ImageUploader";
 import Camera from "../components/Camera";
 import SearchResults from "../components/SearchResults";
-const WEBSOCKET_URL = 'ws://localhost:8000/ws'
+import Modal from "../components/Modal";
+import LOGO_LARGE from "../logo-large.svg";
 
-const socket = io("ws://localhost:3000/ws", { path: "/ws/socket.io/", transports: ['websocket', 'polling'] });
-  
-socket.on("connect", () => { console.log("Connected", socket.id) });
-socket.on("response", () => { console.log("Response", socket.id) });
-socket.on("message", data => { console.log(data) });
+const WEBSOCKET_URL = "ws://localhost:8000/ws";
 
 const Home = () => {
   const [selectedFile, setSelectedFile] = useState(null);
-  const [selectedFileb64, setSelectedFileb64] = useState(null);
-  const [results, setResults] = useState(null);
+  const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [socket, setSocket] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProductLink, setSelectedProductLink] = useState(null);
 
   const handleFileChange = (event) => {
-    const data = new FileReader()
-    data.addEventListener('load', ()=> {
-        setSelectedFileb64(data.result)
-    })
-    data.readAsDataURL(event.target.files[0])
+    const data = new FileReader();
+    data.addEventListener("load", () => {
+      handleUpload(data.result);
+    });
+    data.readAsDataURL(event.target.files[0]);
     setSelectedFile(event.target.files[0]);
   };
 
-  const handleUpload = async () => {
-    //const formData = new FormData();
-    //formData.append("image_file", selectedFile);
-
+  const handleUpload = async (b64img) => {
     try {
       setIsLoading(true);
-      console.log(selectedFileb64)
-      // TODO: add error in case file is not set or socket is closed
-      if (selectedFileb64) {
-        socket.send(selectedFileb64)
+      console.log(b64img);
+      if (b64img) {
+        socket.send(b64img);
         console.log("sent b64 image to server");
       }
-
-      /*const response = await axios.post(
-        "http://localhost:8000/uploadfile/",
-        formData
-      );
-
-      if (response.status === 200) {
-        setResults(response.data.results);
-        console.log(response.data.results);
-      } else {
-        console.error("Error:", response.statusText);
-      }*/
     } catch (error) {
       console.error("Error:", error.message);
-    } finally {
-      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     const newSocket = new WebSocket(WEBSOCKET_URL);
     setSocket(newSocket);
-    return;// (); //=> newSocket.close();
   }, []);
 
   useEffect(() => {
@@ -74,34 +51,44 @@ const Home = () => {
     };
 
     socket.onmessage = function (event) {
-      // TODO: setResults here
       console.log("Received message:", event.data);
+      const data = JSON.parse(event.data);
+      setResults((prevResults) => {
+        const newResults = [...prevResults, data];
+        if (newResults.length >= 5) {
+          setIsLoading(false);
+        }
+        return newResults;
+      });
     };
 
     socket.onclose = function (event) {
       console.log("WebSocket closed");
       setIsLoading(false);
       socket.close();
-      //const newSocket = new WebSocket(WEBSOCKET_URL);
-      //setSocket(newSocket);
     };
-  
+
     socket.onerror = function (error) {
-        console.error("Error:", error)
-        setIsLoading(false);
-        socket.close();
+      console.error("Error:", error);
+      setIsLoading(false);
+      socket.close();
     };
 
     return () => {
       socket.close();
     };
   }, [socket]);
-  
+
   useEffect(() => {
-    if (selectedFile) {
-      handleUpload();
+    if (isModalOpen) {
+      setTimeout(() => {
+        setIsModalOpen(false);
+        if (selectedProductLink) {
+          window.open(selectedProductLink, "_blank");
+        }
+      }, 3000);
     }
-  }, [selectedFile]);
+  }, [isModalOpen]);
 
   const MOCKED_RESULTS = [
     {
@@ -153,13 +140,28 @@ const Home = () => {
           Upload or Capture Your Image
         </h2>
         <ImageUploader handleFileChange={handleFileChange} />
-        <Camera />
+        <Camera handleUpload={handleUpload}/>
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+          <div className="flex flex-col items-center justify-center p-10">
+            <img src={LOGO_LARGE} alt="Affirm Logo" className="mb-4" />
+            <h3 className="text-xl font-bold mb-4">Buy Now, Pay Over Time</h3>
+            <lottie-player
+              autoplay
+              loop
+              mode="normal"
+              src="https://lottie.host/2259fab8-4b05-4734-98a5-30d0155afdf1/hLtopSNTBI.json"
+            ></lottie-player>
+            <p className="mt-4">We're taking you to your product...</p>
+          </div>
+        </Modal>
       </div>
       <div className="w-full">
         <SearchResults
           results={results}
           selectedFile={selectedFile}
           isLoading={isLoading}
+          setSelectedProductLink={setSelectedProductLink}
+          setIsModalOpen={setIsModalOpen}
         />
       </div>
     </div>
