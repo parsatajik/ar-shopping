@@ -38,7 +38,7 @@ const Result = ({
     </div>
     <div className="w-3/4">
       <h4 className="text-gray-700 text-lg font-semibold mr-4">{title}</h4>
-      <p className="text-gray-500 mt-3">${price}</p>
+      <p className="text-gray-500 mt-3">{price}</p>
       <a
         href={link}
         target="_blank"
@@ -63,21 +63,19 @@ const SearchResults = ({
     setIsModalOpen(true);
   };
 
-  if (results) {
+  if (isLoading || results.length > 0) {
     return (
       <>
         <h3 className="text-gray-700 text-lg font-semibold mb-4">Results</h3>
         {results.map((result, index) => (
-          <Result {...result} handleResultClick={handleResultClick} />
+          <Result
+            {...result}
+            handleResultClick={handleResultClick}
+            key={`result-${index}`}
+          />
         ))}
-      </>
-    );
-  } else if (isLoading) {
-    return (
-      <>
-        <h3 className="text-gray-700 text-lg font-semibold mb-4">Results</h3>
-        {[...Array(5)].map((_, index) => (
-          <Loading key={index} />
+        {[...Array(5 - results.length)].map((_, index) => (
+          <Loading key={`loading-${index}`} />
         ))}
       </>
     );

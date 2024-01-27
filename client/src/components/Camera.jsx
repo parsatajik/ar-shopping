@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-const Camera = () => {
+const Camera = ({ handleUpload }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [hasPhoto, setHasPhoto] = useState(false);
@@ -17,6 +17,28 @@ const Camera = () => {
   };
 
   const handleCaptureClick = () => {
+    const context = canvasRef.current.getContext("2d");
+    const video = videoRef.current;
+
+    // Clear the canvas if a photo already exists
+    if (hasPhoto) {
+      context.clearRect(
+        0,
+        0,
+        canvasRef.current.width,
+        canvasRef.current.height
+      );
+    }
+
+    // Draw the new image
+    canvasRef.current.width = video.videoWidth;
+    canvasRef.current.height = video.videoHeight;
+    context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+
+    // Convert the canvas image to a base64 string and pass it to handleUpload
+    const b64img = canvasRef.current.toDataURL("image/png");
+    handleUpload(b64img);
+
     setHasPhoto(true);
   };
 
@@ -27,22 +49,12 @@ const Camera = () => {
     setTimeout(() => {
       setHasPhoto(false);
       setIsClearing(false);
-    }, 25); 
+    }, 25);
   };
 
   useEffect(() => {
     openCamera();
   }, []);
-
-  useEffect(() => {
-    if (hasPhoto) {
-      const context = canvasRef.current.getContext("2d");
-      const video = videoRef.current;
-      canvasRef.current.width = video.videoWidth;
-      canvasRef.current.height = video.videoHeight;
-      context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-    }
-  }, [hasPhoto]);
 
   return (
     <div className="flex flex-col">
@@ -51,18 +63,15 @@ const Camera = () => {
         className="w-full h-auto rounded shadow-md"
         autoPlay
       />
-      <AnimatePresence>
-        {hasPhoto && (
-          <motion.canvas
-            ref={canvasRef}
-            className="mt-4 w-full rounded shadow-md"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.1 }}
-          />
-        )}
-      </AnimatePresence>
+      <motion.canvas
+        ref={canvasRef}
+        className={`mt-4 w-full rounded shadow-md ${
+          hasPhoto ? "block" : "hidden"
+        }`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: hasPhoto ? 1 : 0 }}
+        transition={{ duration: 0.5 }}
+      />
       <div className="flex">
         <button
           onClick={handleCaptureClick}
