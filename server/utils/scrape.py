@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import re
 import random
 from money_parser import price_str
+import json
 
 specs_arr = []
 specs_obj = {}
@@ -47,7 +48,6 @@ def scrape_webpage(target_url="https://www.amazon.com/Bluetooth-Headphones-Cance
     # TODO: tweak this for other merchants, but this is only for Amazon
     headers={"User-Agent":useragents[random.randint(0,31)],"accept-language": "en-US,en;q=0.9","accept-encoding": "gzip, deflate, br","accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"}
 
-    obj = {}
     l=[]
     resp = requests.get(target_url, headers=headers)
     
@@ -57,6 +57,14 @@ def scrape_webpage(target_url="https://www.amazon.com/Bluetooth-Headphones-Cance
 
     soup = BeautifulSoup(resp.text,'html.parser')
 
+    if 'walmart' in target_url:
+        return scrape_walmart(soup, resp)
+    else:
+        return scrape_amazon(soup, resp)
+
+
+def scrape_amazon(soup, resp):
+    obj = {}
     try:
         obj["title"] = soup.find('h1',{'id':'title'}).text.lstrip().rstrip()
     except:
@@ -65,7 +73,6 @@ def scrape_webpage(target_url="https://www.amazon.com/Bluetooth-Headphones-Cance
 
     images = re.findall('"hiRes":"(.+?)"', resp.text)
     obj["images"] = images
-
     try:
         obj["price"] = soup.find("span",{"class":"a-price"}).find("span").text
         price = price_str(obj["price"])
@@ -95,4 +102,47 @@ def scrape_webpage(target_url="https://www.amazon.com/Bluetooth-Headphones-Cance
     specs_arr.append(specs_obj)
     obj["specs"] = specs_arr
     return obj
+
+
+
+def scrape_walmart(soup, resp):
+    obj = {}
+    try:
+        obj["price"] = soup.find("span",{"itemprop":"price"}).text.replace("Now ","")
+    except:
+        obj["price"]=None
+    try:
+        obj["name"] = soup.find("h1",{"itemprop":"name"}).text
+    except:
+        obj["name"]=None
+    try:
+        obj["rating"] = soup.find("span",{"class":"rating-number"}).text.replace("(","").replace(")","")
+    except:
+        obj["rating"]=None
+
+
+    image_divs = soup.findAll('div', attrs={'data-testid': 'media-thumbnail'})
+    all_image_urls = []
+
+    for div in image_divs:
+        image = div.find('img', attrs={'loading': 'lazy'})
+        if image:
+            image_url = image['src']
+        all_image_urls.append(image_url)
+
+    obj["images"] = all_image_urls
+    script = soup.find('script', {'id': '__NEXT_DATA__'})
+    parsed_json = json.loads(script.text)
+
+    try:
+        enableAffirm = parsed_json['props']['pageProps']['bootstrapData']['cv']['cart']['_all_']['enableAffirm']
+        if enableAffirm:
+            obj['supports_bnpl'] = "True"
+        else:
+            obj['supports_bnpl'] = "False"
+    except:
+        obj['supports_bnpl'] = "False"
+
+    return obj
+
 

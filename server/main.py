@@ -30,34 +30,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-aq = asyncio.Queue()
-
-
-class ConnectionManager:
-    last_message = ""
-
-    def __init__(self) -> None:
-        self.connections = {}
-
-    async def connect(self, conn_id: str, websocket: WebSocket):
-        await websocket.accept()
-        self.connections[conn_id] = websocket
-
-    async def disconnect(self, conn_id):
-        websocket: WebSocket = self.connections[conn_id]
-        await websocket.close()
-        del self.connections[conn_id]
-
-    async def send_messages(self, conn_id, message):
-        websocket: WebSocket = self.connections[conn_id]
-        print("hi I am here in send message...!!!!")
-        print(websocket)
-        print(type(message))
-        await websocket.send_json(message)
-
-
-manager = ConnectionManager()
-
 
 #
 # Validate file.
@@ -103,35 +75,23 @@ def process_link(link, title):
         }
     except Exception as e:
         # print(e)
-        print("Falling back to Selenium!")
+        print(f"Falling back to Selenium for {link}!")
         return process_link_using_selenium(link, title)
 
 
-# Validate file.
-def validate_image_type(image_type):
-    allowed_image_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/jpg"]
-    print("Valiating image type")
-    if image_type not in allowed_image_types:
-        print("Invalid Image name")
-        return False
-    return True
+#
+# Main route.
+@app.post("/uploadfile/")
+def create_upload_file(image_file: UploadFile = File(...)):
+    validate_image(image_file)
 
+    image_content = image_file.file.read()
 
-async def process_image(data):
-    print(re.split(";|:", data))
-    image_type = re.split(";|:", data)[1]
-    result = validate_image_type(image_type)
-    if not result:
-        await aq.put({"error": "Invalid image type. Supported types: JPEG, PNG, GIF"})
-        return {"results": "Invalid Image!"}
+    detected_objects = detect_objects(image_content)
 
-    response = urllib.request.urlopen(data)
-    image_data = response.file.read()
-    detected_objects = detect_objects(image_data)
-    results = {}
     if detected_objects:
-        search_results = search(detected_objects, 5)
-        processed_results = []
+        search_results = search(detected_objects, 5)  # Limit to 3 results
+
         # Use ThreadPoolExecutor to run the processing in parallel
         with ThreadPoolExecutor() as executor:
             futures = []
@@ -139,46 +99,16 @@ async def process_image(data):
                 future = executor.submit(process_link, link, title)
                 futures.append(future)
 
-            for f in concurrent.futures.as_completed(futures):
-                result = f.result()
-                print(result)
-                await aq.put({**result})
+            # Wait for all futures to complete
+            concurrent.futures.wait(futures)
 
-        return {"results": "done"}
+            # Get the results from the completed futures
+            processed_results = [future.result() for future in futures]
+
+            # Update the search_results with the processed results
+            for i, (link, _) in enumerate(search_results.items()):
+                search_results[link] = processed_results[i]
+
+        return {"results": search_results}
     else:
         return {"error": "No objects detected in the image."}
-
-
-# Consumer sending data to client
-async def process_data(q):
-    while True:
-        print("Waiting on processing data from queue")
-        data = await q.get()
-        print(f"processing: {data}")
-        # TODO: Need to change the conn_id
-        await manager.send_messages("1", data)
-
-
-#
-# Main route
-@app.websocket("/ws")
-async def upload_file_ws(websocket: WebSocket):
-    # TODO: change hardcoded connection id
-    # Accept WebSocket connection
-    await manager.connect("1", websocket)
-    try:
-        while True:
-            print(manager.connections.get("1"))
-            data = await websocket.receive_text()
-            if data:
-                await process_image(data)
-    except Exception as e:
-        print(e)
-        await manager.disconnect("1")
-
-
-@app.on_event("startup")
-async def start_up():
-    consumers = asyncio.create_task(process_data(aq))
-    # await asyncio.gather(consumers)
-    # await aq.join()

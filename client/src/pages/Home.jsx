@@ -5,79 +5,50 @@ import Camera from "../components/Camera";
 import SearchResults from "../components/SearchResults";
 import Modal from "../components/Modal";
 import LOGO_LARGE from "../logo-large.svg";
+import axios from "axios";
 
-const WEBSOCKET_URL = "ws://localhost:8000/ws";
 
 const Home = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [socket, setSocket] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProductLink, setSelectedProductLink] = useState(null);
 
   const handleFileChange = (event) => {
-    const data = new FileReader();
-    data.addEventListener("load", () => {
-      handleUpload(data.result);
-    });
-    data.readAsDataURL(event.target.files[0]);
     setSelectedFile(event.target.files[0]);
   };
+  
+  const handleUpload = async () => {
+    const formData = new FormData();
+    formData.append("image_file", selectedFile);
 
-  const handleUpload = async (b64img) => {
     try {
       setIsLoading(true);
-      console.log(b64img);
-      if (b64img) {
-        socket.send(b64img);
-        console.log("sent b64 image to server");
+
+      const response = await axios.post(
+        "http://localhost:8000/uploadfile/",
+        formData
+      );
+
+      if (response.status === 200) {
+        setResults(response.data.results);
+        console.log(response.data.results);
+      } else {
+        console.error("Error:", response.statusText);
       }
     } catch (error) {
       console.error("Error:", error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    const newSocket = new WebSocket(WEBSOCKET_URL);
-    setSocket(newSocket);
-  }, []);
-
-  useEffect(() => {
-    if (!socket) return;
-
-    socket.onopen = function (event) {
-      console.log("WebSocket connected");
-    };
-
-    socket.onmessage = function (event) {
-      console.log("Received message:", event.data);
-      const data = JSON.parse(event.data);
-      setResults((prevResults) => {
-        const newResults = [...prevResults, data];
-        if (newResults.length >= 5) {
-          setIsLoading(false);
-        }
-        return newResults;
-      });
-    };
-
-    socket.onclose = function (event) {
-      console.log("WebSocket closed");
-      setIsLoading(false);
-      socket.close();
-    };
-
-    socket.onerror = function (error) {
-      console.error("Error:", error);
-      setIsLoading(false);
-      socket.close();
-    };
-
-    return () => {
-      socket.close();
-    };
-  }, [socket]);
+    if (selectedFile) {
+      handleUpload();
+    }
+  }, [selectedFile]);
 
   useEffect(() => {
     if (isModalOpen) {
@@ -140,7 +111,7 @@ const Home = () => {
           Upload or Capture Your Image
         </h2>
         <ImageUploader handleFileChange={handleFileChange} />
-        <Camera handleUpload={handleUpload}/>
+        <Camera />
         <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
           <div className="flex flex-col items-center justify-center p-10">
             <img src={LOGO_LARGE} alt="Affirm Logo" className="mb-4" />
