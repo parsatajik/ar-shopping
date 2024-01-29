@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from utils.openai_vision import detect_objects
 from utils.search import search
@@ -7,9 +7,6 @@ from utils.product_picture import searchPicture
 from utils.scrape import scrape_webpage
 from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
-import asyncio
-import re
-import urllib.request
 
 
 app = FastAPI()
@@ -19,7 +16,6 @@ origins = [
     "http://localhost",
     "http://localhost:3000",
     "http://localhost:8000",
-    "ws://localhost:3000",
 ]
 
 app.add_middleware(
@@ -106,9 +102,12 @@ def create_upload_file(image_file: UploadFile = File(...)):
             processed_results = [future.result() for future in futures]
 
             # Update the search_results with the processed results
+            results = []
             for i, (link, _) in enumerate(search_results.items()):
-                search_results[link] = processed_results[i]
+                result = processed_results[i]
+                result["link"] = link
+                results.append(result)
 
-        return {"results": search_results}
+        return {"results": results}
     else:
         return {"error": "No objects detected in the image."}

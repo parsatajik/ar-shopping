@@ -7,7 +7,6 @@ import Modal from "../components/Modal";
 import LOGO_LARGE from "../logo-large.svg";
 import axios from "axios";
 
-
 const Home = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [results, setResults] = useState([]);
@@ -18,10 +17,12 @@ const Home = () => {
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
   };
-  
+
   const handleUpload = async () => {
     const formData = new FormData();
     formData.append("image_file", selectedFile);
+
+    setResults([]);
 
     try {
       setIsLoading(true);
@@ -111,7 +112,7 @@ const Home = () => {
           Upload or Capture Your Image
         </h2>
         <ImageUploader handleFileChange={handleFileChange} />
-        <Camera />
+        <Camera setSelectedFile={setSelectedFile} />
         <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
           <div className="flex flex-col items-center justify-center p-10">
             <img src={LOGO_LARGE} alt="Affirm Logo" className="mb-4" />

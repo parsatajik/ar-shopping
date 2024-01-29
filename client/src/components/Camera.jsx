@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-const Camera = ({ handleUpload }) => {
+const Camera = ({ setSelectedFile }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [hasPhoto, setHasPhoto] = useState(false);
@@ -37,7 +37,19 @@ const Camera = ({ handleUpload }) => {
 
     // Convert the canvas image to a base64 string and pass it to handleUpload
     const b64img = canvasRef.current.toDataURL("image/png");
-    handleUpload(b64img);
+
+    // Convert base64 to Blob
+    const byteString = atob(b64img.split(",")[1]);
+    const mimeString = b64img.split(",")[0].split(":")[1].split(";")[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    const blob = new Blob([ab], { type: mimeString });
+
+    // Pass the Blob to handleUpload
+    setSelectedFile(blob);
 
     setHasPhoto(true);
   };
