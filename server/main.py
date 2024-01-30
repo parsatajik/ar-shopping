@@ -1,4 +1,6 @@
+import os
 from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from utils.openai_vision import detect_objects
 from utils.search import search
@@ -10,6 +12,8 @@ import concurrent.futures
 
 
 app = FastAPI()
+
+client_build_dir = os.getenv("CLIENT_BUILD_DIR", "/app/client/build")
 
 # Configure CORS settings
 origins = [
@@ -75,7 +79,10 @@ def process_link(link, title):
         return process_link_using_selenium(link, title)
 
 
-#
+# Serve React static files
+app.mount("/", StaticFiles(directory=client_build_dir, html=True), name="static")
+
+
 # Main route.
 @app.post("/uploadfile/")
 def create_upload_file(image_file: UploadFile = File(...)):

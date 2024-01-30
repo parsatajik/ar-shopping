@@ -71,3 +71,21 @@ You can run the application using Streamlit:
 This will start the Streamlit server and open the application in your web browser.
 
 Remember to never commit your .env file to version control. It contains sensitive data. Add it to your .gitignore file.
+
+7. Creating and running a docker container
+
+You can containerize this application by running the following command:
+```bash
+docker build -t ar-shopping:latest .
+```
+
+After the container is created, you can run image accordingly:
+```bash
+docker run -p 8000:80 -e OPENAI_API_KEY=OPENAI_API_KEY -e SEARCH_ENGINE_ID=SEARCH_ENGINE_ID -e SEARCH_ENGINE_API_KEY=SEARCH_ENGINE_API_KEY ar-shopping:latest
+```
+Make sure to replace the placeholder env variabels with correct ones.
+
+If you're having issues with stopping the container you can run the following command:
+```bash
+docker kill $(docker ps -q -f publish=8000)
+```
