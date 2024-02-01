@@ -118,9 +118,10 @@ const SearchResults = ({
               ARMode={ARMode}
             />
           ))}
-          {[...Array(5 - results.length)].map((_, index) => (
-            <Loading key={`loading-${index}`} ARMode={ARMode} />
-          ))}
+          {!results.length &&
+            [...Array(5)].map((_, index) => (
+              <Loading key={`loading-${index}`} ARMode={ARMode} />
+            ))}
         </>
       ) : selectedFile ? (
         <>
