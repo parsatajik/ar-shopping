@@ -7,6 +7,7 @@ import App from "./App";
 import AboutUs from "./pages/AboutUs";
 import Error from "./pages/Error";
 import Home from "./pages/Home";
+import ARMode from "./pages/ARMode";
 
 const router = createBrowserRouter([
   {
@@ -17,6 +18,10 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <Home />,
+      },
+      {
+        path: "/ar-mode",
+        element: <ARMode />
       },
       {
         path: "/about-us",

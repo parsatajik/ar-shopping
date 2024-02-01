@@ -12,7 +12,7 @@ client = OpenAI(
 )
 
 PROMPT = """
-Analyze the image and identify all the products present. Please provide as much detail as possible, including the brand name, model, color, and any distinguishing features. If the product is something where dimensions would typically be relevant (like a TV, monitor, furniture, etc.), please also estimate its dimensions. If you don't know the brand name, just say 'I don't know the brand name' but give as many details about the product as you can. Based on these details, please provide the best possible search terms to find the exact or similar product on the internet. only output the search terms, not the product details.
+Analyze the image and identify all the products present. Please provide as much detail as possible, including the brand name, model, color, and any distinguishing features. If the product is something where dimensions would typically be relevant (like a TV, monitor, furniture, etc.), please also estimate its dimensions. If you don't know the brand name, DO NOT SAY 'I don't know the brand name' but give as many details about the product as you can. Also, DO NOT say that the product is unavailable. Based on these details, please provide the best possible search terms to find the exact or similar product on the internet. only output the search terms, not the product details.
 """
 
 
