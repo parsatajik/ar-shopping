@@ -62,6 +62,19 @@ module.exports = {
         "greyscale-black-90": "#202223",
         "greyscale-black-100": "#101820",
       },
+      screens: {
+        // default breakpoints
+        sm: "640px",
+        md: "768px",
+        lg: "1024px",
+        xl: "1280px",
+        "2xl": "1536px",
+        // Height-based breakpoints
+        "h-sm": { raw: "(min-height: 640px)" },
+        "h-md": { raw: "(min-height: 768px)" },
+        "h-lg": { raw: "(min-height: 1024px)" },
+        "h-xl": { raw: "(min-height: 1280px)" },
+      },
     },
   },
   plugins: [require("preline/plugin")],

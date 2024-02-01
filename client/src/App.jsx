@@ -4,7 +4,6 @@ import { Outlet } from "react-router-dom";
 
 import "preline/preline";
 
-import Sidebar from "./components/Sidebar";
 
 const App = () => {
   const location = useLocation();
@@ -14,8 +13,7 @@ const App = () => {
   }, [location.pathname]);
 
   return (
-    <div className="mx-auto mt-0 lg:mt-10 max-w-5xl p-8">
-      <Sidebar />
+    <div>
       <Outlet />
     </div>
   );

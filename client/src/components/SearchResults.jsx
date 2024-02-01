@@ -1,15 +1,32 @@
-// TODO: check for negative prices
-// TODO: ensure correct display for pricing
-
-import React, { Suspense } from "react";
+import React from "react";
 import LOGO from "../logo.svg";
 
-const Loading = () => (
-  <div className="animate-pulse flex flex-row gap-4 bg-white shadow-md rounded px-6 pt-4 pb-6 mb-4 relative transform transition duration-500">
-    <div className="w-1/4 h-32 bg-gray-300 rounded"></div>
-    <div className="w-3/4 space-y-4 py-1">
-      <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-      <div className="h-4 bg-gray-300 rounded"></div>
+const Loading = ({ ARMode }) => (
+  <div
+    className={`animate-pulse flex flex-row gap-4 bg-white shadow-md rounded px-2 h-sm:px-6 pt-2 pb-2 h-sm:pt-4 h-sm:pb-6 mb-4 relative transform transition duration-500 ${
+      ARMode ? "max-h-[calc(100vh/7)]" : ""
+    }`}
+  >
+    <div
+      className={`w-1/4 h-10 h-sm:h-32 bg-gray-300 rounded ${
+        ARMode ? "max-h-[calc(100vh/7)]" : ""
+      }`}
+    ></div>
+    <div
+      className={`w-3/4 space-y-4 py-1 ${
+        ARMode ? "max-h-[calc(100vh/7)]" : ""
+      }`}
+    >
+      <div
+        className={`h-2 h-sm:h-4 bg-gray-300 rounded w-3/4 ${
+          ARMode ? "max-h-[calc(100vh/7)]" : ""
+        }`}
+      ></div>
+      <div
+        className={`h-2 h-sm:h-4 bg-gray-300 rounded ${
+          ARMode ? "max-h-[calc(100vh/7)]" : ""
+        }`}
+      ></div>
     </div>
   </div>
 );
@@ -21,35 +38,54 @@ const Result = ({
   image_url,
   supports_bnpl,
   handleResultClick,
-}) => (
-  <div
-    className="flex flex-row gap-4 bg-white shadow-md rounded px-6 pt-4 pb-6 mb-4 relative transform transition duration-500 hover:scale-105"
-    onClick={() => handleResultClick(link)}
-  >
-    {supports_bnpl && (
-      <img
-        src={LOGO}
-        alt="Supports BNPL"
-        className="absolute top-2 right-2 h-7 w-7"
-      />
-    )}
-    <div className="w-1/4">
-      <img src={image_url} alt={title} className="w-full" />
-    </div>
-    <div className="w-3/4">
-      <h4 className="text-gray-700 text-lg font-semibold mr-4">{title}</h4>
-      <p className="text-gray-500 mt-3">{price}</p>
-      <a
-        href={link}
-        target="_blank"
-        rel="noreferrer"
-        className="text-blue-600 hover:text-blue-700 transition duration-500 hover:underline"
+  ARMode,
+}) => {
+  const resultClass = `flex flex-row gap-4 bg-white shadow-md rounded px-6 pt-1 pb-2 h-sm:pt-4 h-sm:pb-6 mb-4 relative transform transition duration-500 hover:scale-105 ${
+    ARMode ? "max-h-[calc(100vh/7)]" : ""
+  }`;
+  const imageClass = `w-1/4 ${ARMode ? "max-h-[calc(100vh/7)]" : ""}`;
+
+  return (
+    <div className={resultClass} onClick={() => handleResultClick(link)}>
+      {supports_bnpl && (
+        <img
+          src={LOGO}
+          alt="Supports BNPL"
+          className="absolute top-2 right-2 h-4 w-4 h-sm:h-7 h-sm:w-7"
+        />
+      )}
+      <div className={imageClass}>
+        <img
+          src={image_url}
+          alt={title}
+          className="w-full h-full object-cover"
+        />
+      </div>
+      <div
+        className={`w-3/4 ${
+          ARMode ? "max-h-[calc(100vh/7)] flex flex-row h-sm:flex-col" : ""
+        }`}
       >
-        View Product
-      </a>
+        <h4
+          className={`text-gray-700 ${
+            ARMode
+              ? "text-xs h-sm:text-base max-h-[15ch] max-w-[17ch] h-sm:max-h-full h-sm:max-w-full overflow-hidden text-ellipsis"
+              : "text-lg"
+          } font-semibold mr-4`}
+        >
+          {title}
+        </h4>
+        <p
+          className={`text-gray-500 mt-3 ${
+            ARMode ? "text-xs h-sm:text-sm" : "base"
+          }`}
+        >
+          {price}
+        </p>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const SearchResults = ({
   results,
@@ -57,45 +93,52 @@ const SearchResults = ({
   isLoading,
   setSelectedProductLink,
   setIsModalOpen,
+  isModalOpen,
+  ARMode,
 }) => {
   const handleResultClick = (link) => {
     setSelectedProductLink(link);
     setIsModalOpen(true);
   };
 
-  if (isLoading || results.length > 0) {
-    return (
-      <>
-        <h3 className="text-gray-700 text-lg font-semibold mb-4">Results</h3>
-        {results.map((result, index) => (
-          <Result
-            {...result}
-            handleResultClick={handleResultClick}
-            key={`result-${index}`}
-          />
-        ))}
-        {[...Array(5 - results.length)].map((_, index) => (
-          <Loading key={`loading-${index}`} />
-        ))}
-      </>
-    );
-  } else if (selectedFile) {
-    return (
-      <>
-        <h3 className="text-gray-700 text-lg font-semibold mb-4">Results</h3>
-        <p className="text-gray-500 mt-3">No results found.</p>
-      </>
-    );
-  } else {
-    return (
-      <>
-        <h3 className="text-gray-700 text-lg font-semibold mb-4">Results</h3>
-        <p className="text-gray-500 mt-3">
-          Please upload or capture your product's image 😊
-        </p>
-      </>
-    );
-  }
+  const resultsContainerClass = `text-gray-700 ${
+    ARMode ? "max-h-screen" : ""
+  } ${ARMode && isModalOpen ? "opacity-30" : ""}`;
+
+  return (
+    <div className={resultsContainerClass}>
+      {isLoading || results.length > 0 ? (
+        <>
+          {!ARMode && <h3 className="text-lg font-semibold mb-4">Results</h3>}
+          {results.map((result, index) => (
+            <Result
+              {...result}
+              handleResultClick={handleResultClick}
+              key={`result-${index}`}
+              ARMode={ARMode}
+            />
+          ))}
+          {[...Array(5 - results.length)].map((_, index) => (
+            <Loading key={`loading-${index}`} ARMode={ARMode} />
+          ))}
+        </>
+      ) : selectedFile ? (
+        <>
+          {!ARMode && <h3 className="text-lg font-semibold mb-4">Results</h3>}
+          <p className="mt-3">No results found.</p>
+        </>
+      ) : (
+        !ARMode && (
+          <>
+            <h3 className="text-lg font-semibold mb-4">Results</h3>
+            <p className="mt-3">
+              Please upload or capture your product's image 😊
+            </p>
+          </>
+        )
+      )}
+    </div>
+  );
 };
 
 export default SearchResults;

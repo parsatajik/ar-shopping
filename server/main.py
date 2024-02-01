@@ -80,7 +80,7 @@ def process_link(link, title):
 
 
 # Serve React static files
-app.mount("/", StaticFiles(directory=client_build_dir, html=True), name="static")
+app.mount("/static", StaticFiles(directory=client_build_dir, html=True), name="static")
 
 
 # Main route.
