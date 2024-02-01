@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import random
-from money_parser import price_str
+from money_parser import price_dec
 import json
 
 useragents=['Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36',
@@ -75,8 +75,8 @@ def scrape_amazon_api(product_url):
             obj['images'] = None
         try:        
             obj['price'] = data['price']
-            price = price_str(obj["price"])
-            if price >= '50':
+            price = price_dec(obj["price"])
+            if price >= 50:
                 obj["supports_bnpl"] = "True"
             else:
                 obj["supports_bnpl"] = "False"
@@ -90,6 +90,7 @@ def scrape_amazon_api(product_url):
             obj['rating'] = None
     else:
         print(f"Request failed with status code {response.status_code}")
+    print(obj)
     return obj
 
 def scrape_walmart(product_url):
