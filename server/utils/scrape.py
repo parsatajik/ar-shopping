@@ -5,10 +5,6 @@ import random
 from money_parser import price_str
 import json
 
-specs_arr = []
-specs_obj = {}
-
-# we need to change headers on every request else Amazon can recognize our header and can block it eventually.
 useragents=['Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36',
@@ -42,79 +38,78 @@ useragents=['Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_2) AppleWebKit/537.36 
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36']
 
 
-
 def scrape_webpage(target_url="https://www.amazon.com/Bluetooth-Headphones-Cancellation-Sweatproof-Earphones/dp/B08JCTDZN"):
 
-    # TODO: tweak this for other merchants, but this is only for Amazon
-    headers={"User-Agent":useragents[random.randint(0,31)],"accept-language": "en-US,en;q=0.9","accept-encoding": "gzip, deflate, br","accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"}
+    if 'walmart' in target_url:
+        return scrape_walmart(target_url)
+    elif 'best' in target_url:
+        return scrape_bestbuy(target_url)
+    else:
+        return scrape_amazon_api(target_url)
 
-    l=[]
-    resp = requests.get(target_url, headers=headers)
+def scrape_amazon_api(product_url):
+    obj = {}
+    pid = product_url.rsplit('/')[-1]
+    if pid is None or '/' in pid:
+        # return dummy data 
+        print(f"Request failed since no product ID could be found in the product URL; pid= {pid}")
+        return None
     
-    if(resp.status_code != 200):
-        print("Could not query the URL")
-        raise Exception("Failed to query the URL!")
+    url = "https://api.scrapingdog.com/amazon/product"
+    params = {
+        "api_key": "65bac44310be157339ca4bfd",
+        "domain": "com",
+        "asin": pid,
+    }
+    
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        try:
+            obj['title'] = data['title']
+        except:
+            obj['title'] = None
+        try:
+            obj['images'] = data['images']
+        except:
+            obj['images'] = None
+        try:        
+            obj['price'] = data['price']
+            price = price_str(obj["price"])
+            if price >= '50':
+                obj["supports_bnpl"] = "True"
+            else:
+                obj["supports_bnpl"] = "False"
+        except:
+            obj['price'] = None
+            obj["supports_bnpl"] = "False"
+        try:
+            obj['rating'] = data['average_rating']
+        except:
+            obj['rating'] = None
+    else:
+        print(f"Request failed with status code {response.status_code}")
+    return obj
+
+def scrape_walmart(product_url):
+    target_url=f"https://api.scrapingdog.com/scrape?dynamic=false&url={product_url}&api_key=65bac44310be157339ca4bfd"
+    obj = {}
+
+    resp = requests.get(target_url)
+    if resp.status_code != 200:
+        print(f"Request failed with status code {response.status_code}")
+        return None
 
     soup = BeautifulSoup(resp.text,'html.parser')
 
-    if 'walmart' in target_url:
-        return scrape_walmart(soup, resp)
-    else:
-        return scrape_amazon(soup, resp)
-
-
-def scrape_amazon(soup, resp):
-    obj = {}
-    try:
-        obj["title"] = soup.find('h1',{'id':'title'}).text.lstrip().rstrip()
-    except:
-        obj["title"] = None
-
-
-    images = re.findall('"hiRes":"(.+?)"', resp.text)
-    obj["images"] = images
-    try:
-        obj["price"] = soup.find("span",{"class":"a-price"}).find("span").text
-        price = price_str(obj["price"])
-        if price >= '50':
-            obj["supports_bnpl"] = "True"
-            print(obj)
-        else:
-            obj["supports_bnpl"] = "False"
-    except:
-        obj["price"] = None
-        obj["supports_bnpl"] = "False"
-
-
-    try:
-        obj["rating"] = soup.find("i",{"class":"a-icon-star"}).text
-    except:
-        obj["rating"] = None
-
-
-    specs = soup.find_all("tr",{"class":"a-spacing-small"})
-
-    for u in range(0,len(specs)):
-        spanTags = specs[u].find_all("span")
-        specs_obj[spanTags[0].text]=spanTags[1].text
-
-
-    specs_arr.append(specs_obj)
-    obj["specs"] = specs_arr
-    return obj
-
-
-
-def scrape_walmart(soup, resp):
-    obj = {}
     try:
         obj["price"] = soup.find("span",{"itemprop":"price"}).text.replace("Now ","")
     except:
         obj["price"]=None
     try:
-        obj["name"] = soup.find("h1",{"itemprop":"name"}).text
+        obj["title"] = soup.find("h1",{"itemprop":"name"}).text
     except:
-        obj["name"]=None
+        obj["title"]=None
     try:
         obj["rating"] = soup.find("span",{"class":"rating-number"}).text.replace("(","").replace(")","")
     except:
@@ -143,6 +138,48 @@ def scrape_walmart(soup, resp):
     except:
         obj['supports_bnpl'] = "False"
 
+    print(obj)
     return obj
 
+def scrape_bestbuy(product_url):
+    obj = {}
 
+    headers={"User-Agent":useragents[random.randint(0,31)],"accept-language": "en-US,en;q=0.9","accept-encoding": "gzip, deflate, br","accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"}
+    
+    resp = requests.get(product_url,headers=headers)
+
+    if resp.status_code != 200:
+        print(f"Request failed with status code {resp.status_code}")
+        return None
+
+    soup = BeautifulSoup(resp.text,'html.parser')
+
+    runs = 0
+    try:
+        results = soup.findAll('div', attrs={'class': 'priceView-hero-price priceView-customer-price'})
+        for listing in results:
+            if runs >= 1: break
+            element = soup.select_one('div.priceView-customer-price > span:first-child')
+            if None in element:
+                continue
+            obj["price"] = element.get_text()
+            runs += 1
+    except: 
+        obj["price"]=None
+    try:    
+        obj["title"] = soup.find("h1").text
+    except: 
+        obj["title"]=None
+
+    all_img_urls = []
+    try:
+        results = soup.findAll('div', attrs={'class': 'collection-image'})
+        for image in results:
+            all_img_urls.append(image.img['src'])
+        obj["images"] = all_img_urls
+    except:
+        obj["images"] = None
+
+    # TODO could not find a way to check if affirm is enabled
+    obj['supports_bnpl'] = "True"
+    return obj
