@@ -58,10 +58,12 @@ def process_link(link, title):
     print(f"Scrapping weblink {link}")
     try:
         price_and_bnpl_support = scrape_webpage(link)
+        if price_and_bnpl_support is None:
+            print(f"Could not successfully scrape the webpage: {link}")
+            return "Invalid"
+
         image_url = None
-        # TODO: with try/except can remove all these checks so it falls back on selenium
         if "images" in price_and_bnpl_support and len(price_and_bnpl_support["images"]) > 0:
-            # TODO: Pick the first image (hopefully this works but since I couldnt render, not sure)
             image_url = price_and_bnpl_support["images"][0]
         else:
             image_url = searchPicture(title)
@@ -74,9 +76,8 @@ def process_link(link, title):
             "image_url": image_url,
         }
     except Exception as e:
-        # print(e)
-        print(f"Falling back to Selenium for {link}!")
-        return process_link_using_selenium(link, title)
+        print(f"Could not successfully scrape the webpage: {link}")
+        return "Invalid"
 
 
 # Serve React static files
@@ -105,16 +106,14 @@ def create_upload_file(image_file: UploadFile = File(...)):
             # Wait for all futures to complete
             concurrent.futures.wait(futures)
 
+            processed_results = []
             # Get the results from the completed futures
-            processed_results = [future.result() for future in futures]
+            for future in futures:
+                if "Invalid" in future.result():
+                    continue
+                processed_results.append(future.result())
 
             # Update the search_results with the processed results
-            results = []
-            for i, (link, _) in enumerate(search_results.items()):
-                result = processed_results[i]
-                result["link"] = link
-                results.append(result)
-
-        return {"results": results}
+        return {"results": processed_results}
     else:
         return {"error": "No objects detected in the image."}

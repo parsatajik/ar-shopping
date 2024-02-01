@@ -81,8 +81,9 @@ def scrape_amazon_api(product_url):
             else:
                 obj["supports_bnpl"] = "False"
         except:
-            obj['price'] = None
-            obj["supports_bnpl"] = "False"
+            print(f"Could not find price on product page for: {product_url}")
+            return None
+
         try:
             obj['rating'] = data['average_rating']
         except:
@@ -97,7 +98,7 @@ def scrape_walmart(product_url):
 
     resp = requests.get(target_url)
     if resp.status_code != 200:
-        print(f"Request failed with status code {response.status_code}")
+        print(f"Request failed with status code {resp.status_code}")
         return None
 
     soup = BeautifulSoup(resp.text,'html.parser')
@@ -105,7 +106,9 @@ def scrape_walmart(product_url):
     try:
         obj["price"] = soup.find("span",{"itemprop":"price"}).text.replace("Now ","")
     except:
-        obj["price"]=None
+        print(f"Could not find price on product page for: {product_url}")
+        return None
+
     try:
         obj["title"] = soup.find("h1",{"itemprop":"name"}).text
     except:
@@ -165,7 +168,9 @@ def scrape_bestbuy(product_url):
             obj["price"] = element.get_text()
             runs += 1
     except: 
-        obj["price"]=None
+        print(f"Could not find price on product page for: {product_url}")
+        return None
+
     try:    
         obj["title"] = soup.find("h1").text
     except: 
@@ -183,3 +188,4 @@ def scrape_bestbuy(product_url):
     # TODO could not find a way to check if affirm is enabled
     obj['supports_bnpl'] = "True"
     return obj
+
