@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useCallback, useEffect } from "react";
 import LOGO from "../logo.svg";
+import { useSpeechRecognition } from "react-speech-recognition";
 
 const Loading = ({ ARMode }) => (
   <div
@@ -8,7 +9,7 @@ const Loading = ({ ARMode }) => (
     }`}
   >
     <div
-      className={`w-1/4 h-10 h-sm:h-32 bg-gray-300 rounded ${
+      className={`w-1/4 h-10 h-sm:h-24 bg-gray-300 rounded ${
         ARMode ? "max-h-[calc(100vh/7)]" : ""
       }`}
     ></div>
@@ -105,6 +106,31 @@ const SearchResults = ({
     ARMode ? "max-h-screen" : ""
   } ${ARMode && isModalOpen ? "opacity-30" : ""}`;
 
+  const handleProductSelection = useCallback(
+    (productNumber) => {
+      console.log(productNumber);
+      const numberWords = ["one", "two", "three", "four", "five"];
+      const index = numberWords.indexOf(productNumber.toLowerCase());
+      if (index >= 0 && index < results.length) {
+        const productLink = results[index].link;
+        handleResultClick(productLink);
+      }
+    },
+    [results, setSelectedProductLink, setIsModalOpen]
+  );
+
+  const commands = [
+    {
+      command: "Product :number",
+      callback: (number) => handleProductSelection(number),
+      matchInterim: true,
+    },
+  ];
+
+  const { listening, browserSupportsSpeechRecognition } = useSpeechRecognition({
+    commands,
+  });
+
   return (
     <div className={resultsContainerClass}>
       {isLoading || results.length > 0 ? (
@@ -118,7 +144,7 @@ const SearchResults = ({
               ARMode={ARMode}
             />
           ))}
-          {!results.length &&
+          {results.length === 0 &&
             [...Array(5)].map((_, index) => (
               <Loading key={`loading-${index}`} ARMode={ARMode} />
             ))}

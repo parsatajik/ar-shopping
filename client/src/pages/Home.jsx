@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import SpeechRecognition, {
+  useSpeechRecognition,
+} from "react-speech-recognition";
 
 import ImageUploader from "../components/ImageUploader";
 import Sidebar from "../components/Sidebar";
@@ -21,32 +23,39 @@ const Home = () => {
     setSelectedFile(event.target.files[0]);
   };
 
-  const handleUpload = async () => {
-    const formData = new FormData();
-    formData.append("image_file", selectedFile);
+  const commands = [
+    {
+      command: "AR Mode",
+      callback: () => (window.location.pathname = "/ar-mode"),
+      matchInterim: true,
+    },
+  ];
 
-    setResults([]);
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition,
+    isMicrophoneAvailable,
+  } = useSpeechRecognition({ commands });
 
-    try {
-      setIsLoading(true);
-
-      const response = await axios.post(
-        "http://localhost:8000/uploadfile/",
-        formData
-      );
-
-      if (response.status === 200) {
-        setResults(response.data.results);
-        console.log(response.data.results);
-      } else {
-        console.error("Error:", response.statusText);
-      }
-    } catch (error) {
-      console.error("Error:", error.message);
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    if (!browserSupportsSpeechRecognition || !isMicrophoneAvailable) {
+      console.log("Browser doesn't support speech recognition or microphone is not available.");
+      return;
     }
-  };
+
+    const startListening = async () => {
+      try {
+        await SpeechRecognition.startListening({ continuous: true });
+        console.log("Speech recognition started");
+      } catch (error) {
+        console.error("Error starting speech recognition: ", error);
+      }
+    };
+
+    startListening();
+  }, [browserSupportsSpeechRecognition, isMicrophoneAvailable]);
 
   useEffect(() => {
     if (selectedFile) {
@@ -81,7 +90,7 @@ const Home = () => {
               Alternatively, Enter AR Mode 😎
             </h2>
             <p className="text-gray-500 mt-3">
-              Click the button below or simply say "Enter AR Mode"
+              Click the button below or simply say <strong>"AR Mode"</strong>
             </p>
             <button
               onClick={() => (window.location.pathname = "/ar-mode")}

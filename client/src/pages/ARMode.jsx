@@ -4,6 +4,9 @@ import Modal from "../components/Modal";
 import SearchResults from "../components/SearchResults";
 import LOGO_LARGE from "../logo-large.svg";
 import { uploadImage } from "../utils/functions";
+import SpeechRecognition, {
+  useSpeechRecognition,
+} from "react-speech-recognition";
 
 const ARMode = () => {
   const webcamRef = useRef(null);
@@ -15,8 +18,14 @@ const ARMode = () => {
   const [isLandscape, setIsLandscape] = useState(
     window.innerWidth > window.innerHeight || window.innerWidth > 800
   );
+  const [isRequestActive, setIsRequestActive] = useState(false); // New state variable to track request status
 
   const handleFindProduct = useCallback(() => {
+    if (isRequestActive) {
+      console.log("A request is already in progress.");
+      return;
+    }
+
     setResults([]);
 
     if (!isLandscape) {
@@ -24,18 +33,72 @@ const ARMode = () => {
       return;
     }
 
-    const imageSrc = webcamRef.current.getScreenshot();
-    const byteString = atob(imageSrc.split(",")[1]);
-    const mimeString = imageSrc.split(",")[0].split(":")[1].split(";")[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
-    }
-    const blob = new Blob([ab], { type: mimeString });
+    if (webcamRef.current) {
+      setIsRequestActive(true);
+      const imageSrc = webcamRef.current.getScreenshot();
 
-    uploadImage(blob, setResults, setIsLoading);
+      if (imageSrc) {
+        const byteString = atob(imageSrc.split(",")[1]);
+        const mimeString = imageSrc.split(",")[0].split(":")[1].split(";")[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: mimeString });
+
+        uploadImage(blob, setResults, setIsLoading).finally(() => {
+          setIsRequestActive(false);
+        });
+      } else {
+        console.error("Failed to capture the image from the webcam.");
+        setIsRequestActive(false);
+      }
+    } else {
+      console.error("Webcam is not ready.");
+    }
   }, [webcamRef]);
+
+  const commands = [
+    {
+      command: "Find Product",
+      callback: () => handleFindProduct(),
+      matchInterim: true,
+    },
+    {
+      command: "Got it",
+      callback: () => setIsInstructionModalOpen(false),
+      matchInterim: true,
+    },
+  ];
+
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition,
+    isMicrophoneAvailable,
+  } = useSpeechRecognition({ commands });
+
+  useEffect(() => {
+    if (!browserSupportsSpeechRecognition || !isMicrophoneAvailable) {
+      console.log(
+        "Browser doesn't support speech recognition or microphone is not available."
+      );
+      return;
+    }
+
+    const startListening = async () => {
+      try {
+        await SpeechRecognition.startListening({ continuous: true });
+        console.log("Speech recognition started");
+      } catch (error) {
+        console.error("Error starting speech recognition: ", error);
+      }
+    };
+
+    startListening();
+  }, [browserSupportsSpeechRecognition, isMicrophoneAvailable]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -47,7 +110,7 @@ const ARMode = () => {
       if (newIsLandscape && isInstructionModalOpen) {
         const timer = setTimeout(() => {
           setIsInstructionModalOpen(false);
-        }, 10000); // Close the modal after 10 seconds
+        }, 15000); // Close the modal after 10 seconds
 
         // Cleanup the timer if the component unmounts or if the modal is manually closed before the timer expires
         return () => clearTimeout(timer);
@@ -76,8 +139,6 @@ const ARMode = () => {
       }, 3000);
     }
   }, [isAffirmModalOpen, selectedProductLink]);
-
-  // TODO: add voice commands
 
   return (
     <div className="w-screen h-screen relative bg-gray-800">
@@ -122,11 +183,16 @@ const ARMode = () => {
             </p>
           </div>
           <p className="mb-4 text-center">
-            To find a product, please say "<strong>Find Product</strong>". Our
+            To find a product, please say <strong>"Find Product"</strong>. Our
             AI will then find you the best deals on the internet!
           </p>
           <p className="mb-4 text-center">
-            This modal will close in 10 seconds. You can also click the button
+            To select a product, simply click on it. You can also say{" "}
+            <strong>"Product #"</strong> like <strong>"Product 1"</strong> to
+            select a product.
+          </p>
+          <p className="mb-4 text-center">
+            This modal will close in 15 seconds. You can also click the button
             below to close it or say <strong>"Got It"</strong> 🙂
           </p>
           <button

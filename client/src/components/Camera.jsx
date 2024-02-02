@@ -1,6 +1,7 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import Webcam from "react-webcam";
 import { AnimatePresence, motion } from "framer-motion";
+import { useSpeechRecognition } from "react-speech-recognition";
 
 const Camera = ({ setSelectedFile }) => {
   const webcamRef = useRef(null);
@@ -9,19 +10,28 @@ const Camera = ({ setSelectedFile }) => {
   const [imageSrc, setImageSrc] = useState(null);
 
   const handleCaptureClick = useCallback(() => {
-    const imageSrc = webcamRef.current.getScreenshot();
-    setImageSrc(imageSrc);
-    const byteString = atob(imageSrc.split(",")[1]);
-    const mimeString = imageSrc.split(",")[0].split(":")[1].split(";")[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
-    }
-    const blob = new Blob([ab], { type: mimeString });
+    if (webcamRef.current) {
+      const imageSrc = webcamRef.current.getScreenshot();
 
-    setSelectedFile(blob);
-    setHasPhoto(true);
+      if (imageSrc) {
+        setImageSrc(imageSrc);
+        const byteString = atob(imageSrc.split(",")[1]);
+        const mimeString = imageSrc.split(",")[0].split(":")[1].split(";")[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: mimeString });
+
+        setSelectedFile(blob);
+        setHasPhoto(true);
+      } else {
+        console.error("Failed to capture the image from the webcam.");
+      }
+    } else {
+      console.error("Webcam is not ready.");
+    }
   }, [webcamRef, setSelectedFile]);
 
   const handleClearClick = () => {
@@ -39,33 +49,26 @@ const Camera = ({ setSelectedFile }) => {
       animate: { opacity: 1 },
       exit: { opacity: 0 },
       transition: { duration: 0.2 },
-      className: "w-full h-auto rounded shadow-md"
+      className: "w-full h-auto rounded shadow-md",
     };
 
     return imageSrc ? (
-      <motion.img
-        src={imageSrc}
-        alt="Captured Product"
-        {...commonProps}
-      />
+      <motion.img src={imageSrc} alt="Captured Product" {...commonProps} />
     ) : (
       <motion.div {...commonProps}>
-        <Webcam
-          ref={webcamRef}
-          audio={false}
-          screenshotFormat="image/jpeg"
-        />
+        <Webcam ref={webcamRef} audio={false} screenshotFormat="image/jpeg" />
       </motion.div>
     );
   };
 
   const renderButton = () => {
     const commonProps = {
-      className: "w-full font-bold py-2 px-4 rounded focus:outline-none mt-4 text-sm shadow-md",
+      className:
+        "w-full font-bold py-2 px-4 rounded focus:outline-none mt-4 text-sm shadow-md",
       initial: { opacity: 0, x: -50 },
       animate: { opacity: 1, x: 0 },
       exit: { opacity: 0, x: -50 },
-      transition: { duration: 0.2, exit: { duration: 0 } }
+      transition: { duration: 0.2, exit: { duration: 0 } },
     };
 
     return !imageSrc ? (
@@ -87,14 +90,20 @@ const Camera = ({ setSelectedFile }) => {
     );
   };
 
+  const commands = [
+    {
+      command: "Capture",
+      callback: () => handleCaptureClick(),
+      matchInterim: true,
+    },
+  ];
+
+  // const { transcript, resetTranscript } = useSpeechRecognition({ commands });
+
   return (
     <div className="flex flex-col">
-      <AnimatePresence>
-        {renderImageOrWebcam()}
-      </AnimatePresence>
-      <AnimatePresence>
-        {renderButton()}
-      </AnimatePresence>
+      <AnimatePresence>{renderImageOrWebcam()}</AnimatePresence>
+      <AnimatePresence>{renderButton()}</AnimatePresence>
     </div>
   );
 };
