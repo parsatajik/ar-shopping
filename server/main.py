@@ -9,7 +9,7 @@ from utils.product_picture import searchPicture
 from utils.scrape import scrape_webpage
 from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
-
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 app = FastAPI()
 
@@ -29,6 +29,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class SPAStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        try:
+            return await super().get_response(path, scope)
+        except (HTTPException, StarletteHTTPException) as ex:
+            if ex.status_code == 404:
+                return await super().get_response("index.html", scope)
+            else:
+                raise ex
 
 
 #
@@ -117,3 +128,6 @@ def create_upload_file(image_file: UploadFile = File(...)):
         return {"results": processed_results}
     else:
         return {"error": "No objects detected in the image."}
+
+# Serve React static files
+app.mount("/", SPAStaticFiles(directory=client_build_dir, html=True), name="spa-static-files")
