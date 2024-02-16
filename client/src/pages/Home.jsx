@@ -59,6 +59,7 @@ const Home = () => {
 
   useEffect(() => {
     if (selectedFile) {
+      setResults([]);
       uploadImage(selectedFile, setResults, setIsLoading);
     }
   }, [selectedFile]);

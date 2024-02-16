@@ -61,11 +61,6 @@ const ARMode = () => {
 
   const commands = [
     {
-      command: "Find Product",
-      callback: () => handleFindProduct(),
-      matchInterim: true,
-    },
-    {
       command: "Got it",
       callback: () => setIsInstructionModalOpen(false),
       matchInterim: true,
