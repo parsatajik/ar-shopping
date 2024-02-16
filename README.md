@@ -1,5 +1,9 @@
 README.md
-AR Shopping App
+# Affirm Vision
+
+## AR Shopping App
+
+Video demo: https://youtu.be/EvpvVzsdshU
 
 This application uses OpenAI's GPT-4 Vision model to identify products in an image and then searches for these products on the internet.
 Setup
