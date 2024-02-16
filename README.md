@@ -1,4 +1,3 @@
-README.md
 # Affirm Vision
 
 ## AR Shopping App
